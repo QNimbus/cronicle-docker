@@ -1,0 +1,12 @@
+--- engine.js	2023-10-24 00:30:20.000000000 +0000
++++ engine.new.js	2023-11-17 11:49:41.734542050 +0000
+@@ -149,6 +149,9 @@
+ 			self.archiveLogs();
+ 		} );
+ 		
++		// Force server to become master since we run in a standalone container
++		self.goMaster();
++
+ 		// determine master server eligibility
+ 		this.checkMasterEligibility( function() {
+ 			// master mode (CLI option) -- force us to become master right away
