@@ -1,0 +1,63 @@
+services:
+  app:
+    container_name: ${COMPOSE_PROJECT_NAME}_app
+    image: qnimbus/cronicle
+    build:
+      dockerfile: docker/Dockerfile
+      context: .
+    restart: unless-stopped
+    init: true
+    logging:
+      driver: 'local'
+      options:
+        max-size: '10m'
+        max-file: '5'
+        compress: 'true'
+    networks:
+      - besquared
+    env_file:
+        - .env
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+      - ./config.json:/opt/cronicle/conf/config.json:ro
+      - type: bind
+        source: /var/run/docker.sock
+        target: /var/run/docker.sock
+        read_only: true
+      - type: bind
+        source: /opt/docker/cronicle/data/data
+        target: /opt/cronicle/data
+        read_only: false
+        bind:
+          create_host_path: true
+      - type: bind
+        source: /opt/docker/cronicle/data/logs
+        target: /opt/cronicle/logs
+        read_only: false
+        bind:
+          create_host_path: true
+      - type: bind
+        source: /opt/docker/cronicle/data/plugins
+        target: /opt/cronicle/plugins
+        read_only: false
+        bind:
+          create_host_path: true
+    healthcheck:
+      interval: 30s
+      timeout: 5s
+      start_period: 15s
+      retries: 3
+      test: wget -q --no-verbose --tries=1 --spider http://localhost:3012/api/app/ping || exit 1
+    labels:
+      - 'traefik.enable=true'
+      - 'traefik.http.routers.cronicle.rule=Host(`cronicle.apps.besqua.red`)'
+      - 'traefik.http.routers.cronicle.entrypoints=web-secure'
+      - 'traefik.http.routers.cronicle.tls=true'
+      - 'traefik.http.routers.cronicle.tls.domains[0].main=cronicle.apps.besqua.red'
+      - 'traefik.http.routers.cronicle.middlewares=ipwhitelist@file'
+      - 'traefik.http.services.cronicle.loadbalancer.server.port=3012'
+
+networks:
+  besquared:
+    external: true
